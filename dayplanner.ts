@@ -97,54 +97,87 @@ export class DayPlanner {
      * Create the prompt for Gemini with hardwired preferences
      */
     private createAssignmentPrompt(activities: Activity[], existingAssignments: Assignment[]): string {
-        const existingAssignmentsSection = existingAssignments.length > 0
-            ? `\nEXISTING ASSIGNMENTS (ALREADY SCHEDULED - DO NOT MODIFY):\n${this.assignmentsToString(existingAssignments)}\n`
-            : '';
+                // Build a map of occupied slots from existing assignments so the LLM knows exact availability
+                const occupied = new Array<boolean>(48).fill(false);
+                for (const a of existingAssignments) {
+                        for (let offset = 0; offset < a.activity.duration; offset++) {
+                                const slot = a.startTime + offset;
+                                if (slot >= 0 && slot < 48) occupied[slot] = true;
+                        }
+                }
 
-        const criticalRequirements = [
-            "1. ONLY assign the activities listed above - do NOT add any new activities",
-            "2. Use ONLY valid time slots (0-47)",
-            "3. Avoid conflicts - don't overlap activities",
-            "4. Consider the duration of each activity when scheduling",
-            "5. Use appropriate time slots based on the preferences above",
-            "6. Never assign an activity to more than one time slot"
-        ];
+                // Build contiguous free ranges to simplify scheduling for the LLM
+                const freeRanges: { start: number; length: number }[] = [];
+                let idx = 0;
+                while (idx < 48) {
+                        if (!occupied[idx]) {
+                                let j = idx;
+                                while (j < 48 && !occupied[j]) j++;
+                                freeRanges.push({ start: idx, length: j - idx });
+                                idx = j;
+                        } else {
+                                idx++;
+                        }
+                }
 
-        if (existingAssignments.length > 0) {
-            criticalRequirements.push(`${criticalRequirements.length + 1}. Keep the existing assignments listed above exactly as they are (no overlaps or changes)`);
-        }
+                const existingAssignmentsSection = existingAssignments.length > 0
+                        ? `\nEXISTING ASSIGNMENTS (ALREADY SCHEDULED - DO NOT MODIFY):\n${this.assignmentsToString(existingAssignments)}\n`
+                        : '';
 
-        return `
-You are a helpful AI assistant that creates optimal daily schedules for students.
+                const freeRangesSection = freeRanges.length > 0
+                        ? `\nAVAILABLE CONTIGUOUS FREE RANGES (start slot, length in half-hour slots):\n${freeRanges.map(r => `- ${r.start}, ${r.length} (slots ${r.start}..${r.start + r.length - 1})`).join('\n')}\n`
+                        : '\nNO FREE RANGES AVAILABLE (all slots occupied)\n';
 
-STUDENT PREFERENCES:
-- Exercise activities work well in the morning (6:00 AM - 10:00 AM)
-- Classes and study time should be scheduled during focused hours (9:00 AM - 5:00 PM)
-- Meals should be at regular intervals (breakfast 7-9 AM, lunch 12-1 PM, dinner 6-8 PM)
-- Social activities and relaxation are good for evenings (6:00 PM - 10:00 PM)
-- Avoid scheduling demanding activities too late at night (after 10:00 PM)
-- Leave buffer time between different types of activities
+                // Provide exact durations per title to avoid ambiguity
+                const titleDurationSection = activities.map(a => `- ${a.title}: ${a.duration} (half-hour slots)`).join('\n');
+
+                return `
+You are a helpful AI assistant that MUST produce a VALID daily schedule for students.
 
 TIME SYSTEM:
-- Times are represented in half-hour slots starting at midnight
-- Slot 0 = 12:00 AM, Slot 13 = 6:30 AM, Slot 26 = 1:00 PM, Slot 38 = 7:00 PM, etc.
-- There are 48 slots total (24 hours x 2)
-- Valid slots are 0-47 (midnight to 11:30 PM)
+- Times are represented in half-hour slots starting at midnight.
+- There are 48 slots total (0..47). Slot 0 = 12:00 AM, slot 1 = 12:30 AM, slot 13 = 6:30 AM, etc.
 
-${existingAssignmentsSection}ACTIVITIES TO SCHEDULE (ONLY THESE - DO NOT ADD OTHERS):
+${existingAssignmentsSection}${freeRangesSection}
+ACTIVITIES TO SCHEDULE (ONLY THESE - DO NOT ADD OTHERS):
 ${this.activitiesToString(activities)}
 
-CRITICAL REQUIREMENTS:
-${criticalRequirements.join('\n')}
+ACTIVITY DURATIONS (exact, in half-hour slots):
+${titleDurationSection}
 
-Return your response as a JSON object with this exact structure:
+CRITICAL REQUIREMENTS (MUST BE FOLLOWED):
+1. Do NOT create or invent any activities not in the list above.
+2. ONLY create NEW assignments for the activities listed above that are currently unassigned.
+3. All startTime values MUST be integer slot numbers between 0 and 47 inclusive.
+4. For each assigned activity, all occupied slots are startTime .. startTime + duration - 1 and MUST be free (not occupied by existing assignments or other new assignments).
+5. An activity must fit entirely within one contiguous free range (do NOT split an activity across non-contiguous slots).
+6. Do NOT change or remove any existing assignments.
+7. Never assign the same activity occurrence more than once.
+
+OUTPUT FORMAT (MUST FOLLOW EXACTLY):
+Return ONLY a single JSON object (no surrounding text) with this exact structure:
 {
-  "assignments": [
-    {
-      "title": "exact activity title from the list above",
-      "startTime": valid_slot_number_0_to_47
-    }
-  ]
+    "assignments": [
+        { "title": "exact activity title from the list above", "startTime": integer 0-47 }
+    ],
+    "unassigned": [
+        { "title": "activity title", "reason": "brief reason why it could not be scheduled" }
+    ]
+}
+
+- "assignments" must include one entry per activity you successfully scheduled.
+- If an activity cannot be scheduled, include it once in the optional "unassigned" array with a short reason (e.g. "no contiguous free range of required length").
+- Do NOT include duplicate entries, do NOT change titles, and do NOT include extra commentary or markdown — ONLY the JSON object.
+
+EXAMPLE (follow this structure exactly):
+{
+    "assignments": [
+        { "title": "Study Linear Algebra", "startTime": 18 },
+        { "title": "Workout", "startTime": 32 }
+    ],
+    "unassigned": [
+        { "title": "Group Meeting", "reason": "no contiguous free range of required length" }
+    ]
 }
 
 Return ONLY the JSON object, no additional text.`;
