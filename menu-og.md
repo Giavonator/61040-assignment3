@@ -1,0 +1,68 @@
+
+# Menu (Original Combined)
+
+**concept** Menu [User, Administrator]
+
+**purpose** creating recipes for full course meals
+
+**principle** A friendly chef embarks on their journey of creating a delicious five course menu with amazing different recipes. They *createMenu* with the specific date of the event and starts by adding their first recipe: *createRecipe*. As they are about to *updateRecipeIngredient* they realize that pumpernickel is not registered as an item they've cooked with before. They then *enterItem* into the system with appropriate price and quantity information, allowing them to *updateRecipeIngredient* to their recipe with the appropriate amount of the ingredient they want have for their recipe. They continue finishing up the recipe when they realize they put the wrong recipe name, and change it via *updateRecipe*. A couple days later once our chef is done adding recipes to their menu, the administrator comes in and sees they added the new pumpernickel ingredient. The administrator figures out what the cost and where to purchase the item and *updateItem* in the system. Finally, the menu is all done and confirmed!
+
+**state**  
+    a set of Menu with\
+            a set of Recipe with\
+                     a set of Item with\
+                              an amount Int\
+                     a name String\
+                     an instructions String\
+                     a dishPrice Float\
+                     a servingQuantity Int\
+                     a scalingFactor Float\
+                     a dishType String\
+                     an owner User\
+            a name String\
+            an owner User\
+            a menuCost Float\
+            a date String\
+.\
+    a set of Item with\
+            a name String\
+            a price Float\
+            a quantity Float // Ex. 3\
+            a units String // Ex. "lbs"\
+            a store String\
+            a confirmed Bool
+
+**actions**\
+    createMenu (name: String, date: String): (menu: Menu)\
+            **effects** returns new empty menu that is owned by calling user, and has name/date attributes\
+    updateMenu (menu: Menu, name: String)\
+    updateMenu (menu: Menu, date: String)\
+            **requires** menu exists, calling user owns menu\
+            **effects** update the given attribute\
+.\
+    createRecipe (menu: Menu, name: String, instructions: String, servingQuantity: Int, dishType: String, scalingFactor: Float): (recipe: Recipe)\
+            **requires** menu exists, calling user owns menu \
+            **effects** adds recipe with no ingredients to the menu\
+    updateRecipeIngredient (menu: Menu, recipe: Recipe, item: Item, amount: Int)\
+            **requires** menu exists, recipe exists in menu, calling user owns menu\
+            **effects** recipe updated to have appropriate scaling of item; dishPrice and menuCost reflect new change\
+    updateRecipe (menu: Menu, recipe: Recipe, instructions: String)\
+    updateRecipe (menu: Menu, recipe: Recipe, servingQuantity: Int)\
+    updateRecipe (menu: Menu, recipe: Recipe, scalingFactor: Float)\
+    updateRecipe (menu: Menu, recipe: Recipe, dishType: String)\
+    updateRecipe (menu: Menu, recipe: Recipe, name: String)\
+            **requires** menu exists, recipe exists in menu, calling user owns menu\
+            **effects** update the given attribute\
+.\
+    enterItem (name: String, price: Float, quantity: Float, units: String, store: String): (item: Item)\
+            **requires** no Item already exists with name\
+            **effects** returns and stores new item, confirmed flag set to false\
+    confirmItem (item: Item): (item: Item)\
+            **requires** item exists, item hasn't been confirmed yet, called by Administrator\
+            **effects** returned item is now confirmed\
+    updateItem (item: Item, name: String, price: Float)\
+    updateItem (item: Item, name: String, quanitity: Float)\
+    updateItem (item: Item, name: String, units: String)\
+    updateItem (item: Item, name: String, store: String)\
+            **requires** item exists with name, called by Administrator\
+            **effects** update the given attribute\

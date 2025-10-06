@@ -4,11 +4,11 @@ Context: Plat Maison is Homemade Dish in French.
 
 ## 1. Concepts
 
-You are able to find the original concept here: [platMaison_OG.md](platMaison_OG.md).
+Menu concept: [menu-og.md](menu-og.md).
 
-You can find the AI augmented concept here: [platMaison_AI.md](platMaison_AI.md).
+Augmented Menu concept: [menu-ai.md](menu-ai.md).
 
-Note: Today's implementation will only include the PlatMaison concept. Meaning that although the concept ties closely with the Item and User concepts, they will not be implemented today.
+
 
 ## 2. User Interaction
 

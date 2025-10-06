@@ -10,7 +10,8 @@
 **state**  
     a set of Recipe with\
         a set of Item with\
-              an amount Int\
+              a name String\
+              a cost Float\
         a name String\
         an instructions String\
         a dishPrice Float\
