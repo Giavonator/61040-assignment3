@@ -2,18 +2,18 @@
   "name": "gemini-schedule-demo",
   "version": "1.0.0",
   "description": "A demo application showing how to use Google's Gemini API to create student schedules",
-  "main": "dist/dayplanner-tests.js",
+  "main": "dist/menu-tests.js",
   "scripts": {
     "build": "tsc",
-    "start": "npm run build && node dist/dayplanner-tests.js",
-    "dev": "ts-node --transpile-only dayplanner-tests.ts",
-    "test": "npm run build && node dist/dayplanner-tests.js",
-    "manual": "npm run build && node -e \"require('./dist/dayplanner-tests.js').testManualScheduling()\"",
-    "llm": "npm run build && node -e \"require('./dist/dayplanner-tests.js').testLLMScheduling()\"",
-    "mixed": "npm run build && node -e \"require('./dist/dayplanner-tests.js').testMixedScheduling()\""
+    "start": "npm run build && node dist/menu-tests.js",
+    "dev": "ts-node --transpile-only menu-tests.ts",
+    "test": "npm run build && node dist/menu-tests.js",
+    "manual": "npm run build && node -e \"require('./dist/menu-tests.js').testManualMenuCreation()\"",
+    "llm": "npm run build && node -e \"require('./dist/menu-tests.js').testLLMMenuCreation()\"",
+    "mixed": "npm run build && node -e \"require('./dist/menu-tests.js').testMixedMenuCreation()\""
   },
   "keywords": ["gemini", "ai", "schedule", "student", "demo", "typescript"],
-  "author": "Student Demo",
+  "author": "Giani Alvez",
   "license": "MIT",
   "dependencies": {
     "@google/generative-ai": "^0.21.0"

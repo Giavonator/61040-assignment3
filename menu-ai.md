@@ -1,5 +1,5 @@
 
-# Menu (Original Combined)
+# MenuManager (AI Augmentation)
 
 **concept** Menu [User, Administrator]
 
